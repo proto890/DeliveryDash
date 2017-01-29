@@ -31,26 +31,38 @@ public class PlayerController : MonoBehaviour {
 	void Update ()
     {
         Drive();
-        GroundCheck();
 	}
 
     //Moves player.
     void Drive()
     {
         //Defines a movement vector.
-        Vector3 groundMovement = new Vector3(Input.GetAxis("Horizontal") * moveSpeed * Time.deltaTime, 0, Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime);
+        Vector3 movement = new Vector3(Input.GetAxis("Horizontal") * moveSpeed * Time.deltaTime, 0, Input.GetAxis("Vertical") * moveSpeed * Time.deltaTime);
         //Normalizes vector so that the player can not move faster diagonally.
-        Vector3.Normalize(groundMovement);
-
-        //moves position.
-        transform.position += groundMovement;
+        Vector3.Normalize(movement);
 
         //Checks if there is no movement input
-        if (groundMovement != Vector3.zero)
+        if (movement != Vector3.zero)
         {
             //rotates towards movement direction.
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(groundMovement), rotationSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(movement), rotationSpeed * Time.deltaTime);
         }
+
+        //Checks if the player is in the air.
+        if (!GroundCheck())
+        {
+            //Lerps downward movement from 0 to -5 to give the feel of falling with added momentum.
+            movement.y = Mathf.Lerp(0, -10f * Time.deltaTime, 0.1f);
+        }
+        //If the player is grounded.
+        else
+        {
+            //Don't do any falling.
+            movement.y = 0;
+        }
+
+        //moves position.
+        transform.position += movement;
     }
 
     //Checks if player is on ground.
