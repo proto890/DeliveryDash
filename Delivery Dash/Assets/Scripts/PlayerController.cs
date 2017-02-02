@@ -4,6 +4,8 @@ using System.Collections;
 public class PlayerController : MonoBehaviour {
     //Which layer the Raycast will hit (Currently set to ground layer).
     public LayerMask groundCheckLayer = 8;
+    //Prefab of food game object.
+    public Transform foodPrefab;
 
     //Declares rigidbody.
     private Rigidbody rb;
@@ -13,6 +15,17 @@ public class PlayerController : MonoBehaviour {
     private float moveSpeed = 20;
     //Declares the speed which the player will rotate at when mpving in a different direction.
     private float rotationSpeed = 20;
+    //Sets current magnitude for throwing food.
+    private float currentMagnitude = 0;
+
+    //Throw distance.
+    private float throwForce = 50f;
+    //Stops firing after just firing.
+    private bool justFired = false;
+    //Fire Points, one on each side.
+    private Transform[] firePoints = new Transform[2];
+    //Anchor point for both ground check and the throw vector.
+    private Transform anchorPoint;
 
 	void Start ()
     {
@@ -26,11 +39,34 @@ public class PlayerController : MonoBehaviour {
         {
             Debug.Log("Trail Renderer not found");
         }
-	}
+        //Defines fire points.
+        firePoints[0] = transform.Find("FirePoint[0]");
+        firePoints[1] = transform.Find("FirePoint[1]");
+        //Fire point null check.
+        if (firePoints[0] == null || firePoints[1] == null)
+        {
+            Debug.Log("Fire Point not found");
+        }
+        //Defines anchor.
+        anchorPoint = transform.Find("Anchor");
+    }
 	
 	void Update ()
     {
         Drive();
+
+        //If Fire 1 is clicked and has not just fired.
+        if (Input.GetButtonDown("Fire1") && !justFired)
+        {
+            //Fire.
+            StartCoroutine(FireFood(0));
+        }
+        //If Fire 2 is clicked and has not just fired.
+        else if (Input.GetButtonDown("Fire2") && !justFired)
+        {
+            //Fire.
+            StartCoroutine(FireFood(1));
+        }
 	}
 
     //Moves player.
@@ -46,6 +82,8 @@ public class PlayerController : MonoBehaviour {
         {
             //rotates towards movement direction.
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(movement), rotationSpeed * Time.deltaTime);
+            //Gets the magnitude of the movement vector.
+            currentMagnitude = Vector3.Magnitude(movement);
         }
 
         //Checks if the player is in the air.
@@ -75,7 +113,7 @@ public class PlayerController : MonoBehaviour {
         Debug.DrawRay(transform.position, -Vector3.up * 0.5f, Color.green, 0.2f);
 
         //Checks if raycast has hit anything.
-        if (Physics.Raycast(transform.position, -Vector3.up, out hit, 0.5f))
+        if (Physics.Raycast(anchorPoint.position, -Vector3.up * 2, out hit, 0.5f))
         {
             Debug.Log("Floor was hit.");
 
@@ -107,4 +145,25 @@ public class PlayerController : MonoBehaviour {
             return false;
         }
     }
+
+    //Fires food and takes a parameter (0 or 1)
+    IEnumerator FireFood(short fireSide)
+    {
+        //Set fire to true so that player cant re-fire
+        justFired = true;
+        //Instantiates food transform.
+        Transform food = Instantiate(foodPrefab, firePoints[fireSide].position, transform.rotation) as Transform;
+        //Delacres the throw vector to be the point between the food and the anchor.
+        Vector3 throwVector = food.position - anchorPoint.position;
+        //Adds magnitude so that it keeps momentum.
+        throwVector += transform.forward * currentMagnitude;
+        //Adds force to food.
+        food.GetComponent<Rigidbody>().AddForce(throwVector * throwForce, ForceMode.Impulse);
+
+        //Waits for 0.2 seconds and resets justFired.
+        yield return new WaitForSeconds(0.2f);
+        justFired = false;
+    }
+
+
 }
