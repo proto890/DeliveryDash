@@ -12,7 +12,7 @@ public class PlayerController : MonoBehaviour {
     //Delares an array of trail renderers (2).
     private TrailRenderer[] trailRend = new TrailRenderer[2];
     //Declares the players move speed.
-    private float moveSpeed = 20;
+    private float moveSpeed = 800;
     //Declares the speed which the player will rotate at when mpving in a different direction.
     private float rotationSpeed = 20;
     //Sets current magnitude for throwing food.
@@ -51,9 +51,13 @@ public class PlayerController : MonoBehaviour {
         anchorPoint = transform.Find("Anchor");
     }
 	
-	void Update ()
+    void FixedUpdate()
     {
         Drive();
+    }
+
+	void Update ()
+    {
 
         //If Fire 1 is clicked and has not just fired.
         if (Input.GetButtonDown("Fire1") && !justFired)
@@ -82,15 +86,13 @@ public class PlayerController : MonoBehaviour {
         {
             //rotates towards movement direction.
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(movement), rotationSpeed * Time.deltaTime);
-            //Gets the magnitude of the movement vector.
-            currentMagnitude = Vector3.Magnitude(movement);
         }
 
         //Checks if the player is in the air.
         if (!GroundCheck())
         {
             //Lerps downward movement from 0 to -5 to give the feel of falling with added momentum.
-            movement.y = Mathf.Lerp(0, -10f * Time.deltaTime, 0.1f);
+            //movement.y = Mathf.Lerp(0, -10f * Time.deltaTime, 0.1f);
         }
         //If the player is grounded.
         else
@@ -100,7 +102,9 @@ public class PlayerController : MonoBehaviour {
         }
 
         //moves position.
-        transform.position += movement;
+        rb.AddForce(movement, ForceMode.Force);
+        //Gets the magnitude of the movement vector.
+        currentMagnitude = rb.velocity.magnitude;
     }
 
     //Checks if player is on ground.
@@ -156,7 +160,7 @@ public class PlayerController : MonoBehaviour {
         //Delacres the throw vector to be the point between the food and the anchor.
         Vector3 throwVector = food.position - anchorPoint.position;
         //Adds magnitude so that it keeps momentum.
-        throwVector += transform.forward * currentMagnitude;
+        //throwVector.z += currentMagnitude;
         //Adds force to food.
         food.GetComponent<Rigidbody>().AddForce(throwVector * throwForce, ForceMode.Impulse);
 
